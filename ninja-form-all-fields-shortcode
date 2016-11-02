@@ -1,0 +1,70 @@
+<?php 
+
+function my_nf_all_fields_shortcode( $atts, $content = '' ) {
+	global $ninja_forms_fields, $ninja_forms_processing;
+
+	if ( ! isset ( $ninja_forms_processing ) )
+		return false;
+
+	$html = isset ( $atts['html'] ) ? $atts['html'] : 1;
+
+	if ( 1 == $html ) {
+		// Generate our "all fields" table for use as a JS var.
+		$field_list = '<table><tbody>';
+	} else {
+		$field_list = '';
+	}
+	foreach ( $ninja_forms_processing->get_all_fields() as $field_id => $user_value ) {
+		if ( ! $user_value )
+			continue;
+
+		$field = $ninja_forms_processing->get_field_settings( $field_id );
+		$type = $field['type'];
+		if ( ! isset ( $ninja_forms_fields[ $type ] ) || ! $ninja_forms_fields[ $type ]['process_field'] )
+			continue;
+
+		$value = apply_filters( 'nf_all_fields_field_value', ninja_forms_field_shortcode( array( 'id' => $field_id ) ), $field_id );
+
+		if( isset( $field[ 'data' ][ 'admin_label' ] ) && $field[ 'data' ][ 'admin_label' ] ){
+			$label = $field[ 'data' ][ 'admin_label' ];
+		} else {
+			$label = $field['data']['label'];
+		}
+		$label = strip_tags( apply_filters( 'nf_all_fields_field_label', $label, $field_id ) );
+
+		if ( 1 == $html ) {
+			//$field_list .= '<tr id="ninja_forms_field_' . $field_id . '"><td>' . $label .'</td><td>' . $value . '</td></tr>';
+
+if(strpos($label,"*"))
+    {    
+    $label=str_replace("*","",$label);
+    $field_list .= '<tr id="ninja_forms_field_' . $field_id . '"><td>' . $label .'</td><td>' . $value . '</td></tr>';   
+    }
+    elseif(strpos($label,"?"))
+    {
+       $field_list .= '<tr id="ninja_forms_field_' . $field_id . '"><td>' . $label .'</td><td>' . $value . '</td></tr>';
+    }
+    elseif(strpos($label,":"))
+    {
+       $label=preg_replace("/(.)\\1+/", "$1", $label);
+       $field_list .= '<tr id="ninja_forms_field_' . $field_id . '"><td>' . $label .'</td><td>' . $value . '</td></tr>';
+    }
+    else{
+       $field_list .= '<tr id="ninja_forms_field_' . $field_id . '"><td>' . $label .':</td><td>' . $value . '</td></tr>';
+    }
+
+		} else {
+			$field_list .= $label . ' - ' . $value . "\r\n";
+		}
+	}
+
+	if ( 1 == $html )
+		$field_list .= '</tbody></table>';
+
+	return apply_filters( 'nf_all_fields_table', $field_list, $ninja_forms_processing->get_form_ID() );
+
+}
+
+add_shortcode( 'ninjaformsallfields', 'my_nf_all_fields_shortcode' );
+
+?>
